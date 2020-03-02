@@ -1,16 +1,10 @@
-use clip_sys::{
-  clip_delete_image, clip_get_image_data, clip_get_image_spec, CClipImage, CClipImageSpec,
-};
+use clip_sys::{clip_delete_image, clip_get_image_data, clip_get_image_spec, clip_image_spec};
 use failure::{err_msg, Error};
-use image::bmp::BMPEncoder;
-use image::jpeg::JPEGEncoder;
-use image::png::PNGEncoder;
-use image::ColorType;
-use std::io;
-use std::io::Write;
+use image::{bmp::BMPEncoder, jpeg::JPEGEncoder, png::PNGEncoder, ColorType};
+use std::{io, io::Write, os::raw::c_void};
 
 pub struct ClipImage {
-  ptr: CClipImage,
+  ptr: *mut c_void,
 }
 
 pub trait Encoder {
@@ -42,11 +36,11 @@ where
 }
 
 impl<'a> ClipImage {
-  pub fn from_ptr(ptr: CClipImage) -> Self {
+  pub fn from_ptr(ptr: *mut c_void) -> Self {
     Self { ptr }
   }
 
-  pub fn get_spec(&self) -> CClipImageSpec {
+  pub fn get_spec(&self) -> clip_image_spec {
     unsafe { clip_get_image_spec(self.ptr) }
   }
 
@@ -114,7 +108,7 @@ impl Drop for ClipImage {
   }
 }
 
-fn color_type_from_spec(spec: &CClipImageSpec) -> Option<ColorType> {
+fn color_type_from_spec(spec: &clip_image_spec) -> Option<ColorType> {
   Some(
     match (
       spec.red_shift,
