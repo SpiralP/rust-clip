@@ -1,8 +1,8 @@
-mod clip_image;
+mod image;
 
-pub use self::clip_image::ClipImage;
+pub use self::image::ClipImage;
 use clip_sys::{
-  clip_delete_text, clip_empty_format, clip_get_image, clip_get_text, clip_has, clip_image_format,
+  clip_empty_format, clip_get_image, clip_get_text, clip_has, clip_image, clip_image_format,
   clip_set_text, clip_text_format,
 };
 use failure::{err_msg, Error};
@@ -46,15 +46,7 @@ impl Clip {
 
     let c_string = CString::new(text)?;
 
-    let did_set = unsafe {
-      let raw = c_string.into_raw();
-
-      let did_set = clip_set_text(raw);
-
-      CString::from_raw(raw);
-
-      did_set
-    };
+    let did_set = unsafe { clip_set_text(c_string.as_ptr()) };
 
     if !did_set {
       Err(err_msg("couldn't set clipboard text"))
@@ -64,33 +56,17 @@ impl Clip {
   }
 
   pub fn get_text() -> Result<String, Error> {
-    use std::ffi::CStr;
-
-    unsafe {
-      let c_str = clip_get_text();
-      if c_str.is_null() {
-        Err(err_msg("couldn't get clipboard text"))
-      } else {
-        let string = CStr::from_ptr(c_str)
-          .to_str()
-          .map(std::string::ToString::to_string)
-          .map_err(std::convert::Into::into);
-
-        clip_delete_text(c_str);
-
-        string
-      }
-    }
+    Ok(unsafe { clip_get_text() }.to_string()?)
   }
 
   pub fn get_image() -> Result<ClipImage, Error> {
-    unsafe {
-      let ptr = clip_get_image();
-      if ptr.is_null() {
-        Err(err_msg("couldn't get clipboard image"))
-      } else {
-        Ok(ClipImage::from_ptr(ptr))
-      }
+    let mut img = unsafe { clip_image::new() };
+
+    let ok = unsafe { clip_get_image(&mut img) };
+    if !ok {
+      return Err(err_msg("couldn't get image"));
     }
+
+    Ok(ClipImage::from_clip_image(img))
   }
 }

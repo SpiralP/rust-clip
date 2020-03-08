@@ -1,10 +1,10 @@
-use clip_sys::{clip_delete_image, clip_get_image_data, clip_get_image_spec, clip_image_spec};
+use clip_sys::{clip_image, clip_image_spec};
 use failure::{err_msg, Error};
 use image::{bmp::BMPEncoder, jpeg::JPEGEncoder, png::PNGEncoder, ColorType, ImageError};
-use std::{io::Write, os::raw::c_void};
+use std::{io::Write, slice};
 
 pub struct ClipImage {
-  ptr: *mut c_void,
+  clip_image: clip_image,
 }
 
 pub trait Encoder {
@@ -59,19 +59,19 @@ where
   }
 }
 
-impl<'a> ClipImage {
-  pub fn from_ptr(ptr: *mut c_void) -> Self {
-    Self { ptr }
+impl ClipImage {
+  pub(crate) fn from_clip_image(clip_image: clip_image) -> Self {
+    Self { clip_image }
   }
 
-  pub fn get_spec(&self) -> clip_image_spec {
-    unsafe { clip_get_image_spec(self.ptr) }
+  pub fn get_spec(&self) -> &clip_image_spec {
+    self.clip_image.spec()
   }
 
-  pub fn get_data(&'a self) -> &'a [u8] {
+  pub fn get_data(&self) -> &[u8] {
     let spec = self.get_spec();
     let len: usize = spec.bytes_per_row as usize * spec.height as usize;
-    unsafe { std::slice::from_raw_parts(clip_get_image_data(self.ptr) as *const u8, len) }
+    unsafe { slice::from_raw_parts(self.clip_image.data(), len) }
   }
 
   pub fn write_png<W: Write>(&self, writer: &mut W) -> Result<(), Error> {
@@ -127,14 +127,6 @@ impl<'a> ClipImage {
     }
 
     Ok(())
-  }
-}
-
-impl Drop for ClipImage {
-  fn drop(&mut self) {
-    unsafe {
-      clip_delete_image(self.ptr);
-    }
   }
 }
 

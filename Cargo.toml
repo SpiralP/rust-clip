@@ -6,5 +6,5 @@ edition = "2018"
 
 [dependencies]
 clip-sys = { git = "https://github.com/SpiralP/rust-clip-sys.git" }
-failure = "0.1.6"
+failure = "0.1.7"
 image = "0.23.0"
