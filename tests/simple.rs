@@ -23,3 +23,11 @@ fn test_get_image() {
   let clip_image = Clip::get_image().unwrap();
   println!("{:#?}", clip_image.get_spec());
 }
+
+#[test]
+fn test_get_paths() {
+  if !Clip::has_format(ClipFormat::Paths) {
+    eprintln!("skipping get_paths test, no paths in clipboard");
+    return;
+  }
+}

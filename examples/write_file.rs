@@ -1,6 +1,5 @@
 use clip::{Clip, ClipFormat};
-use std::fs::File;
-use std::io::Write;
+use std::{fs::File, io::Write};
 
 fn main() {
   match Clip::get_format().expect("other unimplemented format") {
@@ -27,6 +26,10 @@ fn main() {
       }
 
       println!("wrote to test.png");
+    }
+
+    kind => {
+      println!("other clipboard type {:?}!", kind);
     }
   }
 }
